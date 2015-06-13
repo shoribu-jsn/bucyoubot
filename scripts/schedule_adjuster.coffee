@@ -3,23 +3,23 @@ randomstring = require 'randomstring'
 module.exports = (robot) ->
   robot.respond /(adjust schedule from|as) (.*)/, (res) ->
     code = randomstring.generate(5)
-    candidates = res.match[2].split /,|and/
+    options = res.match[2].split /,|and/
 
-    for value, i in candidates
-      candidates[i] = value.trim()
+    for value, i in options
+      options[i] = value.trim()
 
     name = robot.name
     room = res.message.room
 
-    robot.brain.set("as_#{room}_#{code}", candidates)
+    robot.brain.set("as_#{room}_#{code}", options)
     robot.brain.set("as_last_#{room}", code)
 
-    res.reply "OK, I'd like to do it. Code = #{code}, Candidate = #{candidates.join(', ')}"
+    res.reply "OK, I'd like to do it. Code = #{code}, Options = #{options.join(', ')}"
     res.send """
 @channel, please talk to me like
-`@#{name}, I'm available #{candidates[0]}, ... (about #{code})`,
-`@#{name}, Maybe I'm available #{candidates[0]}, ... (about #{code})` or
-`@#{name}, I'm not available #{candidates[0]}, .. (about #{code})` (when you want to cancel)
+`@#{name}, I'm available #{options[0]}, ... (about #{code})`,
+`@#{name}, Maybe I'm available #{options[0]}, ... (about #{code})` or
+`@#{name}, I'm not available #{options[0]}, .. (about #{code})` (when you want to cancel)
 """
 
   robot.respond /tell me last code/, (res) ->
@@ -27,18 +27,18 @@ module.exports = (robot) ->
     code = robot.brain.get("as_last_#{room}")
     return res.reply 'No data.. :(' unless code
 
-    candidates = robot.brain.get("as_#{room}_#{code}")
-    res.reply "Code = #{code}, Candidates = #{candidates.join(', ')}"
+    options = robot.brain.get("as_#{room}_#{code}")
+    res.reply "Code = #{code}, options = #{options.join(', ')}"
 
 
   userVote = (room, code, name, answer, value) ->
-    candidates = robot.brain.get("as_#{room}_#{code}")
+    options = robot.brain.get("as_#{room}_#{code}")
     vote = robot.brain.get("asv_#{room}_#{code}")
 
     if (!vote)
       vote = {}
-      for candidate in candidates
-        vote[candidate] = {}
+      for option in options
+        vote[option] = {}
 
     if vote[answer] != undefined
       vote[answer][name] = value
@@ -59,12 +59,12 @@ module.exports = (robot) ->
 
   getVoteStatus = (vote) ->
     result = []
-    for candidate, users of vote
+    for option, users of vote
       totalPoint = 0
       for user, point of users
         totalPoint += point
 
-      result.push "#{candidate}(#{totalPoint}): #{getUsersStatus(users)}"
+      result.push "#{option}(#{totalPoint}): #{getUsersStatus(users)}"
 
     result.join "\n"
 
